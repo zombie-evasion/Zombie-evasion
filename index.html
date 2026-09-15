@@ -2,11 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-<meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-
-<title>Zombie Evasion V8.1</title>
+<title>Zombie Evasion V8.2</title>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -33,15 +31,8 @@ main{
  padding:20px
 }
 
-h1{
- font-size:38px;
- margin:0 0 12px
-}
-
-h2{
- font-size:18px;
- color:#bbb
-}
+h1{font-size:38px;margin:0 0 12px}
+h2{font-size:18px;color:#bbb}
 
 button{
  width:100%;
@@ -98,9 +89,7 @@ button{
  border-radius:20px
 }
 
-#gps,
-#terrainStatus,
-#debug{
+#gps,#terrainStatus,#debug{
  font-size:14px;
  color:#ddd
 }
@@ -130,16 +119,14 @@ button{
 
 <h1>🧟 Zombie Evasion</h1>
 
-<h2>V8.1 — PERFORMANCE PREDATOR</h2>
+<h2>V8.2 — TERRAIN PREDATOR</h2>
 
 <p>
-Stable live pursuit first. Terrain intelligence loads
-in the background without blocking the game.
+Stable pursuit with cached terrain intelligence
+and automatic terrain-server fallback.
 </p>
 
-<button id="start">
-START RUN
-</button>
+<button id="start">START RUN</button>
 
 </section>
 
@@ -172,31 +159,19 @@ DISTANCE
 
 </div>
 
-<div id="warning">
-🟢 Acquiring position…
-</div>
+<div id="warning">🟢 Acquiring position…</div>
 
 <div id="map"></div>
 
-<p id="gps">
-Waiting for GPS…
-</p>
+<p id="gps">Waiting for GPS…</p>
 
-<p id="terrainStatus">
-Terrain intelligence waiting…
-</p>
+<p id="terrainStatus">Terrain intelligence waiting…</p>
 
-<p id="debug">
-Game engine ready.
-</p>
+<p id="debug">Game engine ready.</p>
 
-<button id="recenter">
-📍 RECENTRE
-</button>
+<button id="recenter">📍 RECENTRE</button>
 
-<button id="end">
-END RUN
-</button>
+<button id="end">END RUN</button>
 
 </section>
 
@@ -240,7 +215,6 @@ let lastGoodPlayer=null;
 
 let gameOver=false;
 let routeBusy=false;
-
 let gameInitialised=false;
 
 
@@ -253,10 +227,6 @@ document.getElementById("start").onclick=function(){
  document.getElementById("home").style.display="none";
  document.getElementById("game").style.display="block";
 
- /*
- Start the timer BEFORE any terrain work.
- */
-
  updateTimer();
 
  timerID=setInterval(
@@ -264,21 +234,13 @@ document.getElementById("start").onclick=function(){
   1000
  );
 
-
- /*
- Build map.
- */
-
  map=L.map(
   "map",
-  {
-   zoomControl:true
-  }
+  {zoomControl:true}
  ).setView(
   [51.5,-0.1],
   16
  );
-
 
  L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -288,15 +250,9 @@ document.getElementById("start").onclick=function(){
   }
  ).addTo(map);
 
-
  setTimeout(function(){
   map.invalidateSize();
  },200);
-
-
- /*
- Start GPS.
- */
 
  if(!navigator.geolocation){
 
@@ -304,27 +260,17 @@ document.getElementById("start").onclick=function(){
   "GPS unavailable.";
 
   return;
-
  }
-
-
- document.getElementById("nav").textContent=
- "GPS";
-
 
  watchID=
  navigator.geolocation.watchPosition(
-
   gpsSuccess,
-
   gpsError,
-
   {
    enableHighAccuracy:true,
    maximumAge:1000,
    timeout:15000
   }
-
  );
 
 };
@@ -336,39 +282,21 @@ document.getElementById("start").onclick=function(){
 
 function gpsSuccess(position){
 
- const lat=
- position.coords.latitude;
+ const lat=position.coords.latitude;
+ const lng=position.coords.longitude;
+ const accuracy=position.coords.accuracy;
 
- const lng=
- position.coords.longitude;
-
- const accuracy=
- position.coords.accuracy;
-
-
- player={
-  lat:lat,
-  lng:lng
- };
-
+ player={lat,lng};
 
  document.getElementById("gps").textContent=
  "GPS working — accuracy ±"+
  Math.round(accuracy)+"m";
 
-
- /*
- Distance tracking with drift filtering.
- */
-
  if(accuracy<=25){
 
   if(!lastGoodPlayer){
 
-   lastGoodPlayer={
-    lat:lat,
-    lng:lng
-   };
+   lastGoodPlayer={lat,lng};
 
   }else{
 
@@ -380,18 +308,13 @@ function gpsSuccess(position){
     lng
    );
 
-
    if(
     moved>=5 &&
     moved<=80
    ){
 
     totalDistance+=moved;
-
-    lastGoodPlayer={
-     lat:lat,
-     lng:lng
-    };
+    lastGoodPlayer={lat,lng};
 
    }
 
@@ -399,14 +322,8 @@ function gpsSuccess(position){
 
  }
 
-
  document.getElementById("distance").textContent=
  (totalDistance/1000).toFixed(2)+" km";
-
-
- /*
- Player marker.
- */
 
  if(!playerMarker){
 
@@ -422,20 +339,14 @@ function gpsSuccess(position){
    }
   ).addTo(map);
 
-
   map.setView(
    [lat,lng],
    17
   );
 
-
   if(!gameInitialised){
 
    gameInitialised=true;
-
-   /*
-   Yield back to Safari before setup.
-   */
 
    setTimeout(
     initialiseGame,
@@ -451,7 +362,6 @@ function gpsSuccess(position){
   );
 
  }
-
 
  updateThreat();
 
@@ -472,22 +382,14 @@ function gpsError(error){
 
 async function initialiseGame(){
 
- /*
- First priority:
- get a zombie on a legitimate
- walking-network location.
- */
-
  document.getElementById("nav").textContent=
  "SPAWNING";
 
  document.getElementById("debug").textContent=
  "Finding a safe infected spawn…";
 
-
  let spawned=
  await spawnZombieOnNetwork();
-
 
  if(!spawned){
 
@@ -495,7 +397,7 @@ async function initialiseGame(){
   "RETRYING";
 
   document.getElementById("debug").textContent=
-  "Spawn service unavailable — retrying shortly.";
+  "Spawn service unavailable — retrying.";
 
   setTimeout(
    initialiseGame,
@@ -503,46 +405,33 @@ async function initialiseGame(){
   );
 
   return;
-
  }
-
-
- /*
- Start movement immediately.
- */
 
  moveTimer=setInterval(
   moveZombie,
   500
  );
 
-
- /*
- Re-plan every 8 seconds.
- Lightweight enough for Safari.
- */
-
  rethinkTimer=setInterval(
   planPredatorRoute,
   8000
  );
 
-
  /*
- Terrain intelligence loads AFTER
- the basic game is already running.
+ Terrain begins only after the
+ basic chase is already functioning.
  */
 
  setTimeout(
   loadTerrain,
-  250
+  300
  );
 
 }
 
 
 /* ==================================================
-   NETWORK-SAFE SPAWN
+   SAFE NETWORK SPAWN
 ================================================== */
 
 async function spawnZombieOnNetwork(){
@@ -551,40 +440,20 @@ async function spawnZombieOnNetwork(){
   return false;
  }
 
-
- /*
- Try several points around the player.
-
- Valhalla snaps the requested point onto
- the pedestrian network. We then use that
- snapped location as the zombie spawn.
-
- This avoids dropping it randomly
- into somebody's house/garden.
- */
-
- let bearings=[
-  Math.random()*360,
-  Math.random()*360,
-  Math.random()*360
- ];
-
-
  for(
-  let i=0;
-  i<bearings.length;
-  i++
+  let attempt=0;
+  attempt<4;
+  attempt++
  ){
 
   let candidate=
   pointFromDistance(
    player.lat,
    player.lng,
-   320+
-   Math.random()*100,
-   bearings[i]
+   300+
+   Math.random()*120,
+   Math.random()*360
   );
-
 
   try{
 
@@ -594,7 +463,6 @@ async function spawnZombieOnNetwork(){
     player
    );
 
-
    if(
     !walkingRoute ||
     walkingRoute.length<2
@@ -602,14 +470,12 @@ async function spawnZombieOnNetwork(){
     continue;
    }
 
-
    let spawnPoint={
     lat:walkingRoute[0][0],
     lng:walkingRoute[0][1]
    };
 
-
-   let distanceFromPlayer=
+   let d=
    distanceMeters(
     spawnPoint.lat,
     spawnPoint.lng,
@@ -617,21 +483,14 @@ async function spawnZombieOnNetwork(){
     player.lng
    );
 
-
-   /*
-   Reject a snap that ended up too close.
-   */
-
-   if(distanceFromPlayer<220){
+   if(d<220){
     continue;
    }
-
 
    zombie={
     lat:spawnPoint.lat,
     lng:spawnPoint.lng
    };
-
 
    zombieMarker=
    L.marker(
@@ -649,17 +508,13 @@ async function spawnZombieOnNetwork(){
     }
    ).addTo(map);
 
-
-   route=
-   walkingRoute;
-
+   route=walkingRoute;
 
    routeIndex=
    closestRouteIndex(
     zombie,
     route
    );
-
 
    if(
     routeIndex<
@@ -668,36 +523,24 @@ async function spawnZombieOnNetwork(){
     routeIndex++;
    }
 
-
    drawRoute(
     route,
     "#3b82f6"
    );
 
-
    document.getElementById("nav").textContent=
    "STREET";
-
 
    document.getElementById("debug").textContent=
    "Predator spawned on walking network.";
 
-
    updateThreat();
-
 
    return true;
 
-  }catch(error){
-
-   /*
-   Try next candidate.
-   */
-
-  }
+  }catch(error){}
 
  }
-
 
  return false;
 
@@ -705,7 +548,77 @@ async function spawnZombieOnNetwork(){
 
 
 /* ==================================================
-   TERRAIN LOADING
+   TERRAIN CACHE
+================================================== */
+
+function terrainCacheKey(){
+
+ /*
+ Rounded to roughly neighbourhood level.
+
+ Nearby starts reuse the same terrain.
+ */
+
+ return(
+  "zombieTerrain_v82_"+
+  player.lat.toFixed(3)+"_"+
+  player.lng.toFixed(3)
+ );
+
+}
+
+
+function loadTerrainFromCache(){
+
+ try{
+
+  let raw=
+  localStorage.getItem(
+   terrainCacheKey()
+  );
+
+  if(!raw){
+   return false;
+  }
+
+  let cached=
+  JSON.parse(raw);
+
+  /*
+  Six-hour cache.
+  */
+
+  if(
+   !cached.time ||
+   Date.now()-cached.time>
+   6*60*60*1000
+  ){
+   return false;
+  }
+
+  if(
+   !Array.isArray(cached.elements)
+  ){
+   return false;
+  }
+
+  processTerrainChunks(
+   cached.elements
+  );
+
+  return true;
+
+ }catch(error){
+
+  return false;
+
+ }
+
+}
+
+
+/* ==================================================
+   TERRAIN LOAD
 ================================================== */
 
 async function loadTerrain(){
@@ -714,44 +627,208 @@ async function loadTerrain(){
   return;
  }
 
-
  document.getElementById("terrainStatus").textContent=
- "Loading terrain in background…";
+ "Checking terrain cache…";
 
 
  /*
- Smaller search radius than V8.
- Keeps response size manageable.
+ Try local cache first.
+ */
+
+ try{
+
+  let raw=
+  localStorage.getItem(
+   terrainCacheKey()
+  );
+
+  if(raw){
+
+   let cached=
+   JSON.parse(raw);
+
+   if(
+    cached.time &&
+    Date.now()-cached.time<
+    6*60*60*1000 &&
+    Array.isArray(cached.elements)
+   ){
+
+    document.getElementById("terrainStatus").textContent=
+    "Loading cached terrain…";
+
+    await processTerrainChunks(
+     cached.elements
+    );
+
+    terrainReady=true;
+    terrainFailed=false;
+
+    showTerrainReady(
+     "cached"
+    );
+
+    setTimeout(
+     planPredatorRoute,
+     100
+    );
+
+    return;
+
+   }
+
+  }
+
+ }catch(error){}
+
+
+ /*
+ Smaller radius than V8.1.
  */
 
  let query=`
- [out:json][timeout:12];
+ [out:json][timeout:10];
  (
-  way(around:550,${player.lat},${player.lng})["building"];
+  way(around:420,${player.lat},${player.lng})["building"];
 
-  way(around:550,${player.lat},${player.lng})["natural"="water"];
+  way(around:420,${player.lat},${player.lng})["natural"="water"];
 
-  way(around:550,${player.lat},${player.lng})["waterway"="riverbank"];
+  way(around:420,${player.lat},${player.lng})["waterway"="riverbank"];
 
-  way(around:550,${player.lat},${player.lng})["barrier"="wall"];
+  way(around:420,${player.lat},${player.lng})["barrier"="wall"];
 
-  way(around:550,${player.lat},${player.lng})["barrier"="fence"];
+  way(around:420,${player.lat},${player.lng})["barrier"="fence"];
 
-  way(around:550,${player.lat},${player.lng})["landuse"="meadow"];
+  way(around:420,${player.lat},${player.lng})["landuse"="meadow"];
 
-  way(around:550,${player.lat},${player.lng})["landuse"="grass"];
+  way(around:420,${player.lat},${player.lng})["landuse"="grass"];
 
-  way(around:550,${player.lat},${player.lng})["landuse"="recreation_ground"];
+  way(around:420,${player.lat},${player.lng})["landuse"="recreation_ground"];
 
-  way(around:550,${player.lat},${player.lng})["landuse"="farmland"];
+  way(around:420,${player.lat},${player.lng})["landuse"="farmland"];
 
-  way(around:550,${player.lat},${player.lng})["leisure"="park"];
+  way(around:420,${player.lat},${player.lng})["landuse"="village_green"];
 
-  way(around:550,${player.lat},${player.lng})["landuse"="village_green"];
+  way(around:420,${player.lat},${player.lng})["leisure"="park"];
  );
  out geom;
  `;
 
+
+ /*
+ Try two independent public endpoints.
+ */
+
+ let servers=[
+
+  "https://overpass-api.de/api/interpreter",
+
+  "https://overpass.kumi.systems/api/interpreter"
+
+ ];
+
+
+ for(
+  let i=0;
+  i<servers.length;
+  i++
+ ){
+
+  document.getElementById("terrainStatus").textContent=
+  i===0
+   ? "Loading terrain…"
+   : "Trying backup terrain server…";
+
+
+  try{
+
+   let elements=
+   await fetchTerrain(
+    servers[i],
+    query
+   );
+
+
+   /*
+   Cache RAW result so future runs
+   don't need another request.
+   */
+
+   try{
+
+    localStorage.setItem(
+     terrainCacheKey(),
+     JSON.stringify({
+      time:Date.now(),
+      elements:elements
+     })
+    );
+
+   }catch(error){}
+
+
+   await processTerrainChunks(
+    elements
+   );
+
+
+   terrainReady=true;
+   terrainFailed=false;
+
+
+   showTerrainReady(
+    i===0
+     ? "primary"
+     : "backup"
+   );
+
+
+   setTimeout(
+    planPredatorRoute,
+    100
+   );
+
+
+   return;
+
+  }catch(error){
+
+   /*
+   Try next server.
+   */
+
+  }
+
+ }
+
+
+ /*
+ Both failed.
+ Keep the already-working street chase.
+ */
+
+ terrainReady=false;
+ terrainFailed=true;
+
+
+ document.getElementById("terrainStatus").textContent=
+ "Terrain unavailable — street pursuit remains active.";
+
+
+ document.getElementById("nav").textContent=
+ "STREET";
+
+}
+
+
+/* ==================================================
+   TERRAIN FETCH
+================================================== */
+
+async function fetchTerrain(
+ server,
+ query
+){
 
  const controller=
  new AbortController();
@@ -762,7 +839,7 @@ async function loadTerrain(){
   function(){
    controller.abort();
   },
-  7000
+  5000
  );
 
 
@@ -770,7 +847,7 @@ async function loadTerrain(){
 
   let response=
   await fetch(
-   "https://overpass-api.de/api/interpreter",
+   server,
    {
     method:"POST",
     body:
@@ -785,9 +862,11 @@ async function loadTerrain(){
 
 
   if(!response.ok){
+
    throw new Error(
-    "Terrain request failed"
+    "Terrain HTTP error"
    );
+
   }
 
 
@@ -795,37 +874,8 @@ async function loadTerrain(){
   await response.json();
 
 
-  /*
-  Process in small chunks so Safari
-  gets regular chances to repaint
-  the timer/map.
-  */
-
-  await processTerrainChunks(
+  return(
    data.elements || []
-  );
-
-
-  terrainReady=true;
-  terrainFailed=false;
-
-
-  document.getElementById("terrainStatus").textContent=
-
-  "Terrain ready — "+
-  hardObstacles.length+
-  " obstacles / "+
-  openAreas.length+
-  " open zones.";
-
-
-  /*
-  Now see if a smarter route is possible.
-  */
-
-  setTimeout(
-   planPredatorRoute,
-   100
   );
 
 
@@ -833,17 +883,7 @@ async function loadTerrain(){
 
   clearTimeout(timeout);
 
-
-  terrainReady=false;
-  terrainFailed=true;
-
-
-  document.getElementById("terrainStatus").textContent=
-  "Terrain unavailable — street pursuit remains active.";
-
-
-  document.getElementById("nav").textContent=
-  "STREET";
+  throw error;
 
  }
 
@@ -851,7 +891,7 @@ async function loadTerrain(){
 
 
 /* ==================================================
-   CHUNKED TERRAIN PROCESSING
+   TERRAIN CHUNKS
 ================================================== */
 
 function processTerrainChunks(elements){
@@ -866,15 +906,11 @@ function processTerrainChunks(elements){
    let index=0;
 
 
-   function processChunk(){
-
-    /*
-    Only 40 map objects each turn.
-    */
+   function nextChunk(){
 
     let end=
     Math.min(
-     index+40,
+     index+25,
      elements.length
     );
 
@@ -904,16 +940,20 @@ function processTerrainChunks(elements){
      let points=
      el.geometry.map(
       function(p){
+
        return{
         lat:p.lat,
         lng:p.lon
        };
+
       }
      );
 
 
      let bbox=
-     makeBBox(points);
+     makeBBox(
+      points
+     );
 
 
      if(
@@ -950,7 +990,9 @@ function processTerrainChunks(elements){
       tags.leisure==="park"
      ){
 
-      if(points.length>=3){
+      if(
+       points.length>=3
+      ){
 
        openAreas.push({
         points:points,
@@ -964,14 +1006,17 @@ function processTerrainChunks(elements){
     }
 
 
-    if(index<elements.length){
+    if(
+     index<
+     elements.length
+    ){
 
      /*
-     Yield to Safari.
+     Give Safari a repaint opportunity.
      */
 
      setTimeout(
-      processChunk,
+      nextChunk,
       0
      );
 
@@ -984,7 +1029,7 @@ function processTerrainChunks(elements){
    }
 
 
-   processChunk();
+   nextChunk();
 
   }
  );
@@ -992,8 +1037,23 @@ function processTerrainChunks(elements){
 }
 
 
+function showTerrainReady(source){
+
+ document.getElementById("terrainStatus").textContent=
+
+ "Terrain ready — "+
+ hardObstacles.length+
+ " obstacles / "+
+ openAreas.length+
+ " open zones ("+
+ source+
+ ").";
+
+}
+
+
 /* ==================================================
-   PREDATOR PLANNING
+   PREDATOR AI
 ================================================== */
 
 async function planPredatorRoute(){
@@ -1012,45 +1072,16 @@ async function planPredatorRoute(){
 
 
  /*
- If terrain isn't ready,
- just keep street pursuit working.
+ Terrain is optional.
  */
 
- if(!terrainReady){
-
-  await streetFallback();
-
-  routeBusy=false;
-
-  return;
-
- }
-
-
- document.getElementById("nav").textContent=
- "THINKING";
-
-
- /*
- LIGHTWEIGHT FIELD TEST.
-
- No giant pathfinding graph.
-
- If direct route:
- - crosses no hard obstacle
- - and is mostly recognised open land
-
- then zombie cuts directly across.
- */
-
- let openAttack=
- directOpenPursuit(
-  zombie,
-  player
- );
-
-
- if(openAttack){
+ if(
+  terrainReady &&
+  directOpenPursuit(
+   zombie,
+   player
+  )
+ ){
 
   route=[
    [
@@ -1079,7 +1110,7 @@ async function planPredatorRoute(){
 
 
   document.getElementById("debug").textContent=
-  "Clear recognised open terrain — direct pursuit.";
+  "Open-terrain attack line found.";
 
 
   routeBusy=false;
@@ -1090,9 +1121,7 @@ async function planPredatorRoute(){
 
 
  /*
- Otherwise stay conservative and use
- walking network rather than doing
- expensive local pathfinding.
+ Otherwise use our proven route.
  */
 
  await streetFallback();
@@ -1104,7 +1133,7 @@ async function planPredatorRoute(){
 
 
 /* ==================================================
-   DIRECT OPEN-TERRAIN TEST
+   FIELD TEST
 ================================================== */
 
 function directOpenPursuit(a,b){
@@ -1121,26 +1150,17 @@ function directOpenPursuit(a,b){
 
  let d=
  distanceMeters(
-  a.lat,
-  a.lng,
-  b.lat,
-  b.lng
+  a.lat,a.lng,
+  b.lat,b.lng
  );
 
 
- /*
- Maximum 12 samples.
-
- V8 could do much more work than this.
- V8.1 deliberately cannot.
- */
-
  let samples=
  Math.min(
-  12,
+  10,
   Math.max(
    4,
-   Math.ceil(d/35)
+   Math.ceil(d/40)
   )
  );
 
@@ -1154,8 +1174,7 @@ function directOpenPursuit(a,b){
   i++
  ){
 
-  let t=
-  i/samples;
+  let t=i/samples;
 
 
   let point={
@@ -1180,46 +1199,27 @@ function directOpenPursuit(a,b){
  }
 
 
- let ratio=
- open/
- (samples+1);
-
-
- /*
- Require strong evidence of open terrain.
- */
-
- return ratio>=0.68;
+ return(
+  open/
+  (samples+1)
+ )>=0.65;
 
 }
 
 
 /* ==================================================
-   STREET PURSUIT
+   STREET ROUTING
 ================================================== */
 
 async function streetFallback(){
-
- if(
-  !player ||
-  !zombie ||
-  gameOver
- ){
-  return;
- }
-
 
  document.getElementById("nav").textContent=
  "STREET";
 
 
- document.getElementById("debug").textContent=
- "Using walking network.";
-
-
  try{
 
-  let walkingRoute=
+  let newRoute=
   await getWalkingRoute(
    zombie,
    player
@@ -1227,8 +1227,8 @@ async function streetFallback(){
 
 
   if(
-   !walkingRoute ||
-   walkingRoute.length<2
+   !newRoute ||
+   newRoute.length<2
   ){
    throw new Error(
     "No route"
@@ -1237,7 +1237,7 @@ async function streetFallback(){
 
 
   route=
-  walkingRoute;
+  newRoute;
 
 
   routeIndex=
@@ -1272,12 +1272,8 @@ async function streetFallback(){
  }catch(error){
 
   /*
-  Crucial:
-  do not erase existing route.
-
-  Zombie keeps moving along the
-  previous route if the routing
-  server temporarily fails.
+  Keep old route.
+  Never freeze or stop the chase.
   */
 
   document.getElementById("nav").textContent=
@@ -1285,7 +1281,7 @@ async function streetFallback(){
 
 
   document.getElementById("debug").textContent=
-  "Route refresh failed — keeping existing pursuit.";
+  "Route refresh failed — previous route retained.";
 
  }
 
@@ -1352,7 +1348,8 @@ async function getWalkingRoute(
   await fetch(
    url,
    {
-    signal:controller.signal
+    signal:
+     controller.signal
    }
   );
 
@@ -1361,9 +1358,11 @@ async function getWalkingRoute(
 
 
   if(!response.ok){
+
    throw new Error(
     "Routing failed"
    );
+
   }
 
 
@@ -1377,9 +1376,11 @@ async function getWalkingRoute(
    !data.trip.legs[0] ||
    !data.trip.legs[0].shape
   ){
+
    throw new Error(
-    "No walking route"
+    "No route"
    );
+
   }
 
 
@@ -1400,7 +1401,7 @@ async function getWalkingRoute(
 
 
 /* ==================================================
-   MOVEMENT
+   ZOMBIE MOVEMENT
 ================================================== */
 
 function moveZombie(){
@@ -1414,11 +1415,6 @@ function moveZombie(){
   return;
  }
 
-
- /*
- 1.25 metres/sec.
- 0.625m every half second.
- */
 
  let remaining=
  0.625;
@@ -1443,7 +1439,9 @@ function moveZombie(){
   );
 
 
-  if(d<=remaining){
+  if(
+   d<=remaining
+  ){
 
    zombie.lat=
    target[0];
@@ -1563,7 +1561,7 @@ function updateThreat(){
 
 
 /* ==================================================
-   HARD OBSTACLES
+   TERRAIN GEOMETRY
 ================================================== */
 
 function lineHitsHardObstacle(
@@ -1572,19 +1570,14 @@ function lineHitsHardObstacle(
 ){
 
  let lineBox=
- makeBBox([
-  a,
-  b
- ]);
+ makeBBox(
+  [a,b]
+ );
 
 
  for(
   let obstacle of hardObstacles
  ){
-
-  /*
-  Cheap bounding-box rejection first.
-  */
 
   if(
    !boxesOverlap(
@@ -1648,10 +1641,6 @@ function lineHitsHardObstacle(
 }
 
 
-/* ==================================================
-   OPEN AREAS
-================================================== */
-
 function pointInOpenArea(point){
 
  for(
@@ -1661,13 +1650,10 @@ function pointInOpenArea(point){
   if(
    point.lat<
     area.bbox.minLat ||
-
    point.lat>
     area.bbox.maxLat ||
-
    point.lng<
     area.bbox.minLng ||
-
    point.lng>
     area.bbox.maxLng
   ){
@@ -1709,21 +1695,29 @@ function makeBBox(points){
   let p of points
  ){
 
-  if(p.lat<minLat){
-   minLat=p.lat;
-  }
+  minLat=
+   Math.min(
+    minLat,
+    p.lat
+   );
 
-  if(p.lat>maxLat){
-   maxLat=p.lat;
-  }
+  maxLat=
+   Math.max(
+    maxLat,
+    p.lat
+   );
 
-  if(p.lng<minLng){
-   minLng=p.lng;
-  }
+  minLng=
+   Math.min(
+    minLng,
+    p.lng
+   );
 
-  if(p.lng>maxLng){
-   maxLng=p.lng;
-  }
+  maxLng=
+   Math.max(
+    maxLng,
+    p.lng
+   );
 
  }
 
@@ -1751,7 +1745,7 @@ function boxesOverlap(a,b){
 
 
 /* ==================================================
-   GEOMETRY
+   POLYGON
 ================================================== */
 
 function pointInPolygon(
@@ -1771,17 +1765,11 @@ function pointInPolygon(
   j=i++
  ){
 
-  let xi=
-  poly[i].lng;
+  let xi=poly[i].lng;
+  let yi=poly[i].lat;
 
-  let yi=
-  poly[i].lat;
-
-  let xj=
-  poly[j].lng;
-
-  let yj=
-  poly[j].lat;
+  let xj=poly[j].lng;
+  let yj=poly[j].lat;
 
 
   let intersect=
@@ -1811,6 +1799,10 @@ function pointInPolygon(
 
 }
 
+
+/* ==================================================
+   SEGMENT COLLISION
+================================================== */
 
 function segmentsIntersect(
  a,b,c,d
@@ -1845,15 +1837,19 @@ function segmentsIntersect(
 
 
  return(
+
   (
    (o1>0 && o2<0) ||
    (o1<0 && o2>0)
   )
+
   &&
+
   (
    (o3>0 && o4<0) ||
    (o3<0 && o4>0)
   )
+
  );
 
 }
@@ -1892,7 +1888,7 @@ function drawRoute(
 
 
 /* ==================================================
-   CLOSEST ROUTE INDEX
+   CLOSEST ROUTE POINT
 ================================================== */
 
 function closestRouteIndex(
@@ -1919,7 +1915,10 @@ function closestRouteIndex(
   );
 
 
-  if(d<bestDistance){
+  if(
+   d<
+   bestDistance
+  ){
 
    bestDistance=d;
    bestIndex=i;
@@ -1935,7 +1934,7 @@ function closestRouteIndex(
 
 
 /* ==================================================
-   POLYLINE6 DECODER
+   POLYLINE DECODER
 ================================================== */
 
 function decodePolyline6(encoded){
@@ -2040,7 +2039,6 @@ function distanceMeters(
  const p1=
  lat1*Math.PI/180;
 
-
  const p2=
  lat2*Math.PI/180;
 
@@ -2048,7 +2046,6 @@ function distanceMeters(
  const dp=
  (lat2-lat1)*
  Math.PI/180;
-
 
  const dl=
  (lon2-lon1)*
@@ -2083,7 +2080,6 @@ function bearingBetween(
 
  const p1=
  lat1*Math.PI/180;
-
 
  const p2=
  lat2*Math.PI/180;
