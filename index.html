@@ -3,84 +3,220 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Zombie Evasion V7</title>
+<title>Zombie Evasion V7.1</title>
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0b0d0e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-main{max-width:600px;margin:auto;padding:18px}
-.panel{background:#1b1e21;border-radius:24px;padding:20px}
-h1{font-size:38px;margin:0 0 12px}
-h2{font-size:18px;color:#bbb}
-button{width:100%;padding:18px;margin-top:12px;border:0;border-radius:18px;font-size:19px;font-weight:800;color:#2878ff}
+
+body{
+ margin:0;
+ background:#0b0d0e;
+ color:#fff;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+}
+
+main{
+ max-width:600px;
+ margin:auto;
+ padding:18px
+}
+
+.panel{
+ background:#1b1e21;
+ border-radius:24px;
+ padding:20px
+}
+
+h1{
+ font-size:38px;
+ margin:0 0 12px
+}
+
+h2{
+ font-size:18px;
+ color:#bbb
+}
+
+button{
+ width:100%;
+ padding:18px;
+ margin-top:12px;
+ border:0;
+ border-radius:18px;
+ font-size:19px;
+ font-weight:800;
+ color:#2878ff
+}
+
 #game{display:none}
-#timer{font-size:42px;font-weight:900;margin-bottom:10px}
-#hud{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.box{background:#292d31;padding:10px;border-radius:12px;font-size:13px}
-.value{display:block;font-size:19px;font-weight:900;margin-top:3px}
-#warning{padding:11px;margin-bottom:10px;border-radius:12px;text-align:center;font-weight:900;background:#253126}
-#map{height:54vh;min-height:410px;border-radius:20px}
-#gps,#debug{font-size:14px;color:#ddd}
-.player-icon{background:#1677ff;border:4px solid white;border-radius:50%;width:24px!important;height:24px!important;box-shadow:0 0 12px #000}
-.zombie-icon{font-size:32px;line-height:32px;text-align:center}
+
+#timer{
+ font-size:42px;
+ font-weight:900;
+ margin-bottom:10px
+}
+
+#hud{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:8px;
+ margin-bottom:10px
+}
+
+.box{
+ background:#292d31;
+ padding:10px;
+ border-radius:12px;
+ font-size:13px
+}
+
+.value{
+ display:block;
+ font-size:19px;
+ font-weight:900;
+ margin-top:3px
+}
+
+#warning{
+ padding:11px;
+ margin-bottom:10px;
+ border-radius:12px;
+ text-align:center;
+ font-weight:900;
+ background:#253126
+}
+
+#map{
+ height:54vh;
+ min-height:410px;
+ border-radius:20px
+}
+
+#gps,#debug{
+ font-size:14px;
+ color:#ddd
+}
+
+.player-icon{
+ background:#1677ff;
+ border:4px solid white;
+ border-radius:50%;
+ width:24px!important;
+ height:24px!important;
+ box-shadow:0 0 12px #000
+}
+
+.zombie-icon{
+ font-size:32px;
+ line-height:32px;
+ text-align:center
+}
 </style>
 </head>
 
 <body>
+
 <main>
 
 <section id="home" class="panel">
+
 <h1>🧟 Zombie Evasion</h1>
-<h2>V7 — HYBRID PATHFINDER</h2>
+
+<h2>V7.1 — SAFE HUNTER</h2>
+
 <p>
-The infected can cross open terrain but must navigate around mapped solid obstacles.
+The infected can cross open terrain, avoid mapped obstacles
+and fall back to the walking network if necessary.
 </p>
+
 <button id="start">START RUN</button>
+
 </section>
+
 
 <section id="game" class="panel">
 
 <div id="timer">30:00</div>
 
 <div id="hud">
- <div class="box">INFECTED<span class="value">1</span></div>
- <div class="box">CLOSEST<span class="value" id="closest">---</span></div>
- <div class="box">NAVIGATION<span class="value" id="nav">SCANNING</span></div>
- <div class="box">DISTANCE<span class="value" id="distance">0.00 km</span></div>
+
+<div class="box">
+INFECTED
+<span class="value">1</span>
 </div>
 
-<div id="warning">🟢 Acquiring position…</div>
+<div class="box">
+CLOSEST
+<span class="value" id="closest">---</span>
+</div>
+
+<div class="box">
+NAVIGATION
+<span class="value" id="nav">SCANNING</span>
+</div>
+
+<div class="box">
+DISTANCE
+<span class="value" id="distance">0.00 km</span>
+</div>
+
+</div>
+
+<div id="warning">
+🟢 Acquiring position…
+</div>
 
 <div id="map"></div>
 
 <p id="gps">Waiting for GPS…</p>
-<p id="debug">Terrain not loaded.</p>
 
-<button id="recenter">📍 RECENTRE</button>
-<button id="end">END RUN</button>
+<p id="debug">
+Waiting for terrain scan…
+</p>
+
+<button id="recenter">
+📍 RECENTRE
+</button>
+
+<button id="end">
+END RUN
+</button>
 
 </section>
+
 </main>
+
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-let map,playerMarker,zombieMarker,routeLine;
+/* =========================
+   GAME VARIABLES
+========================= */
+
+let map;
+let playerMarker;
+let zombieMarker;
+let routeLine;
 
 let player=null;
 let zombie=null;
 
 let obstacles=[];
+
 let route=[];
 let routeIndex=0;
 
-let watchID,timerID,moveTimer,rerouteTimer;
+let watchID;
+let timerID;
+let moveTimer;
+let rerouteTimer;
 
 let seconds=1800;
+
 let totalDistance=0;
 let lastGoodPlayer=null;
 
@@ -88,7 +224,9 @@ let routeBusy=false;
 let gameOver=false;
 
 
-/* ---------- START ---------- */
+/* =========================
+   START GAME
+========================= */
 
 document.getElementById("start").onclick=()=>{
 
@@ -105,27 +243,48 @@ document.getElementById("start").onclick=()=>{
   }
  ).addTo(map);
 
- setTimeout(()=>map.invalidateSize(),300);
+ setTimeout(()=>{
+  map.invalidateSize();
+ },300);
 
- timerID=setInterval(tick,1000);
+ timerID=setInterval(
+  tick,
+  1000
+ );
+
+ if(!navigator.geolocation){
+
+  document.getElementById("gps").textContent=
+  "This browser does not support GPS.";
+
+  return;
+ }
 
  watchID=navigator.geolocation.watchPosition(
+
   gpsSuccess,
+
   e=>{
+
    document.getElementById("gps").textContent=
    "GPS error: "+e.message;
+
   },
+
   {
    enableHighAccuracy:true,
    maximumAge:1000,
    timeout:15000
   }
+
  );
 
 };
 
 
-/* ---------- GPS ---------- */
+/* =========================
+   GPS
+========================= */
 
 function gpsSuccess(p){
 
@@ -137,7 +296,8 @@ function gpsSuccess(p){
  let accuracy=p.coords.accuracy;
 
  document.getElementById("gps").textContent=
- "GPS working — accuracy ±"+Math.round(accuracy)+"m";
+ "GPS working — accuracy ±"+
+ Math.round(accuracy)+"m";
 
 
  if(accuracy<=25){
@@ -145,20 +305,32 @@ function gpsSuccess(p){
   if(lastGoodPlayer){
 
    let d=distanceMeters(
-    lastGoodPlayer.lat,lastGoodPlayer.lng,
-    player.lat,player.lng
+    lastGoodPlayer.lat,
+    lastGoodPlayer.lng,
+    player.lat,
+    player.lng
    );
 
    if(d>=5 && d<=80){
+
     totalDistance+=d;
-    lastGoodPlayer={...player};
+
+    lastGoodPlayer={
+     ...player
+    };
+
    }
 
   }else{
-   lastGoodPlayer={...player};
+
+   lastGoodPlayer={
+    ...player
+   };
+
   }
 
  }
+
 
  document.getElementById("distance").textContent=
  (totalDistance/1000).toFixed(2)+" km";
@@ -167,25 +339,43 @@ function gpsSuccess(p){
  if(!playerMarker){
 
   playerMarker=L.marker(
-   [player.lat,player.lng],
+
+   [
+    player.lat,
+    player.lng
+   ],
+
    {
     icon:L.divIcon({
      className:"player-icon",
      iconSize:[24,24]
     }),
+
     zIndexOffset:1000
    }
+
   ).addTo(map);
 
-  map.setView([player.lat,player.lng],17);
+
+  map.setView(
+   [
+    player.lat,
+    player.lng
+   ],
+   17
+  );
+
 
   initialiseGame();
 
  }else{
 
-  playerMarker.setLatLng([
-   player.lat,player.lng
-  ]);
+  playerMarker.setLatLng(
+   [
+    player.lat,
+    player.lng
+   ]
+  );
 
  }
 
@@ -194,36 +384,64 @@ function gpsSuccess(p){
 }
 
 
-/* ---------- INITIALISE ---------- */
+/* =========================
+   INITIALISE
+========================= */
 
 async function initialiseGame(){
 
+ document.getElementById("nav").textContent=
+ "SCANNING";
+
  await loadTerrain();
+
+
+ document.getElementById("nav").textContent=
+ "SPAWNING";
 
  spawnZombie();
 
- calculateHybridRoute();
-
- moveTimer=setInterval(moveZombie,500);
 
  /*
- Recalculate as player moves.
+ Wait until we have a valid zombie.
  */
 
- rerouteTimer=setInterval(
-  calculateHybridRoute,
-  10000
- );
+ let waitForZombie=setInterval(()=>{
+
+  if(zombie){
+
+   clearInterval(waitForZombie);
+
+   calculateHybridRoute();
+
+
+   moveTimer=setInterval(
+    moveZombie,
+    500
+   );
+
+
+   rerouteTimer=setInterval(
+    calculateHybridRoute,
+    10000
+   );
+
+  }
+
+ },250);
 
 }
 
 
-/* ---------- TERRAIN ---------- */
+/* =========================
+   TERRAIN DATA
+========================= */
 
 async function loadTerrain(){
 
  document.getElementById("debug").textContent=
- "Scanning buildings, water and barriers…";
+ "Scanning nearby buildings, water and barriers…";
+
 
  let q=`
  [out:json][timeout:25];
@@ -237,90 +455,219 @@ async function loadTerrain(){
  out geom;
  `;
 
+
  try{
 
   let response=await fetch(
+
    "https://overpass-api.de/api/interpreter",
+
    {
     method:"POST",
     body:"data="+encodeURIComponent(q)
    }
+
   );
 
-  if(!response.ok) throw new Error();
+
+  if(!response.ok){
+   throw new Error("Terrain request failed");
+  }
+
 
   let data=await response.json();
 
   obstacles=[];
 
+
   data.elements.forEach(el=>{
 
-   if(!el.geometry || el.geometry.length<2) return;
+   if(
+    !el.geometry ||
+    el.geometry.length<2
+   ){
+    return;
+   }
 
-   let points=el.geometry.map(p=>({
-    lat:p.lat,
-    lng:p.lon
-   }));
 
-   obstacles.push({
-    points:points,
-    closed:
+   let points=
+    el.geometry.map(p=>({
+
+     lat:p.lat,
+     lng:p.lon
+
+    }));
+
+
+   let closed=
+    !!(
      el.tags &&
      (
       el.tags.building ||
       el.tags.natural==="water" ||
       el.tags.waterway==="riverbank"
      )
+    );
+
+
+   obstacles.push({
+    points,
+    closed
    });
 
   });
 
+
   document.getElementById("debug").textContent=
-  "Terrain ready — "+obstacles.length+
+  "Terrain ready — "+
+  obstacles.length+
   " mapped obstacles.";
 
  }catch(e){
 
+  /*
+  Important:
+  don't pretend terrain is safe if the
+  obstacle request failed.
+  */
+
+  obstacles=[];
+
   document.getElementById("debug").textContent=
-  "Terrain scan failed.";
+  "Terrain scan unavailable — street routing will be used.";
 
  }
 
 }
 
 
-/* ---------- SPAWN ---------- */
+/* =========================
+   SAFE SPAWN
+========================= */
 
 function spawnZombie(){
 
- let spawn=pointFromDistance(
-  player.lat,
-  player.lng,
-  300+Math.random()*100,
-  Math.random()*360
- );
+ let attempts=0;
+ let spawn=null;
+
+
+ while(attempts<120){
+
+  let candidate=
+   pointFromDistance(
+
+    player.lat,
+    player.lng,
+
+    300+
+    Math.random()*100,
+
+    Math.random()*360
+
+   );
+
+
+  if(
+   !pointInsideSolid(candidate) &&
+   !pointNearObstacle(candidate,12)
+  ){
+
+   spawn=candidate;
+   break;
+
+  }
+
+  attempts++;
+
+ }
+
+
+ if(!spawn){
+
+  document.getElementById("nav").textContent=
+  "SPAWNING";
+
+  document.getElementById("debug").textContent=
+  "Searching for a safer infected spawn…";
+
+  setTimeout(
+   spawnZombie,
+   1500
+  );
+
+  return;
+
+ }
+
 
  zombie={
   lat:spawn.lat,
   lng:spawn.lng
  };
 
+
  zombieMarker=L.marker(
-  [zombie.lat,zombie.lng],
+
+  [
+   zombie.lat,
+   zombie.lng
+  ],
+
   {
    icon:L.divIcon({
+
     html:"🧟",
     className:"zombie-icon",
     iconSize:[36,36],
     iconAnchor:[18,18]
+
    })
   }
+
  ).addTo(map);
+
+
+ document.getElementById("debug").textContent=
+ "Infected spawned — calculating pursuit route.";
 
 }
 
 
-/* ---------- HYBRID PATHFINDER ---------- */
+/* =========================
+   SPAWN SAFETY
+========================= */
+
+function pointNearObstacle(point,metres){
+
+ for(let obstacle of obstacles){
+
+  for(let i=0;i<obstacle.points.length;i++){
+
+   let p=obstacle.points[i];
+
+   let d=distanceMeters(
+    point.lat,
+    point.lng,
+    p.lat,
+    p.lng
+   );
+
+   if(d<metres){
+    return true;
+   }
+
+  }
+
+ }
+
+ return false;
+
+}
+
+
+/* =========================
+   HYBRID PATHFINDER
+========================= */
 
 function calculateHybridRoute(){
 
@@ -329,67 +676,100 @@ function calculateHybridRoute(){
   !player ||
   !zombie ||
   gameOver
- ) return;
+ ){
+  return;
+ }
+
 
  routeBusy=true;
+
+
+ /*
+ If terrain data failed completely,
+ don't assume cross-country is safe.
+ Use street routing.
+ */
+
+ if(obstacles.length===0){
+
+  routeBusy=false;
+
+  calculateStreetFallback();
+
+  return;
+
+ }
+
 
  document.getElementById("nav").textContent=
  "THINKING";
 
 
- /*
- Build navigation nodes.
-
- Start = zombie.
- End = player.
-
- Add offset points around obstacle vertices.
- */
-
  let nodes=[
-  {lat:zombie.lat,lng:zombie.lng},
-  {lat:player.lat,lng:player.lng}
+
+  {
+   lat:zombie.lat,
+   lng:zombie.lng
+  },
+
+  {
+   lat:player.lat,
+   lng:player.lng
+  }
+
  ];
 
+
+ /*
+ Generate navigation candidates around
+ obstacle vertices.
+ */
 
  for(let obstacle of obstacles){
 
   for(let p of obstacle.points){
 
-   /*
-   Only use obstacle vertices reasonably
-   near the chase area.
-   */
-
    let dz=distanceMeters(
-    zombie.lat,zombie.lng,
-    p.lat,p.lng
+    zombie.lat,
+    zombie.lng,
+    p.lat,
+    p.lng
    );
+
 
    let dp=distanceMeters(
-    player.lat,player.lng,
-    p.lat,p.lng
+    player.lat,
+    player.lng,
+    p.lat,
+    p.lng
    );
 
-   if(dz<500 || dp<500){
 
-    /*
-    Create small offset candidates around
-    obstacle corners so zombie doesn't
-    scrape directly through the polygon.
-    */
+   if(
+    dz<500 ||
+    dp<500
+   ){
 
-    for(let bearing of [0,90,180,270]){
+    for(
+     let bearing of
+     [0,45,90,135,180,225,270,315]
+    ){
 
      let candidate=
       pointFromDistance(
-       p.lat,p.lng,
-       5,
+       p.lat,
+       p.lng,
+       8,
        bearing
       );
 
-     if(!pointInsideSolid(candidate)){
+
+     if(
+      !pointInsideSolid(candidate)
+     ){
+
       nodes.push(candidate);
+
      }
 
     }
@@ -402,43 +782,56 @@ function calculateHybridRoute(){
 
 
  /*
- Limit node count for mobile performance.
+ Prevent enormous visibility graphs
+ from locking up the phone.
  */
 
- if(nodes.length>220){
-  nodes=nodes.slice(0,220);
+ if(nodes.length>260){
+
+  nodes=
+   nodes.slice(
+    0,
+    260
+   );
+
  }
 
 
- /*
- Visibility graph.
- */
-
  let graph=
   Array.from(
-   {length:nodes.length},
+   {
+    length:nodes.length
+   },
    ()=>[]
   );
 
 
- for(let i=0;i<nodes.length;i++){
+ for(
+  let i=0;
+  i<nodes.length;
+  i++
+ ){
 
-  for(let j=i+1;j<nodes.length;j++){
+  for(
+   let j=i+1;
+   j<nodes.length;
+   j++
+  ){
 
    let d=distanceMeters(
-    nodes[i].lat,nodes[i].lng,
-    nodes[j].lat,nodes[j].lng
+    nodes[i].lat,
+    nodes[i].lng,
+    nodes[j].lat,
+    nodes[j].lng
    );
 
-   /*
-   Don't create unnecessarily huge edges
-   except direct player/zombie connection.
-   */
 
    if(
-    d>250 &&
+    d>220 &&
     !(i===0 && j===1)
-   ) continue;
+   ){
+    continue;
+   }
 
 
    if(
@@ -453,6 +846,7 @@ function calculateHybridRoute(){
      cost:d
     });
 
+
     graph[j].push({
      node:i,
      cost:d
@@ -465,108 +859,347 @@ function calculateHybridRoute(){
  }
 
 
- let result=dijkstra(
-  graph,
-  0,
-  1
- );
+ let result=
+  dijkstra(
+   graph,
+   0,
+   1
+  );
 
 
  if(result){
 
-  route=result.map(i=>[
-   nodes[i].lat,
-   nodes[i].lng
-  ]);
+  route=
+   result.map(i=>[
+    nodes[i].lat,
+    nodes[i].lng
+   ]);
+
 
   routeIndex=1;
+
 
   let direct=
    route.length===2;
 
+
   document.getElementById("nav").textContent=
-   direct ? "FIELD" : "HYBRID";
+   direct
+   ? "FIELD"
+   : "HYBRID";
+
 
   document.getElementById("debug").textContent=
    direct
    ? "Clear terrain — direct pursuit."
-   : "Obstacle avoided — mixed terrain route.";
+   : "Mixed terrain route active.";
 
 
-  if(routeLine){
-   map.removeLayer(routeLine);
-  }
-
-
-  routeLine=L.polyline(
+  drawRoute(
    route,
-   {
-    color:direct ? "#ff9f0a" : "#bf5af2",
-    weight:5,
-    opacity:.8,
-    dashArray:"6,8"
-   }
-  ).addTo(map);
+   direct
+    ? "#ff9f0a"
+    : "#bf5af2"
+  );
 
- }else{
 
-  document.getElementById("nav").textContent=
-  "BLOCKED";
+  routeBusy=false;
 
-  document.getElementById("debug").textContent=
-  "No safe hybrid route found.";
+  return;
 
  }
 
+
+ /*
+ Hybrid couldn't solve it.
+
+ Do NOT freeze.
+
+ Fall back to pedestrian network.
+ */
+
+ document.getElementById("nav").textContent=
+ "FALLBACK";
+
+
+ document.getElementById("debug").textContent=
+ "Hybrid route unavailable — switching to walking network.";
+
+
  routeBusy=false;
+
+ calculateStreetFallback();
 
 }
 
 
-/* ---------- DIJKSTRA ---------- */
+/* =========================
+   STREET FALLBACK
+========================= */
 
-function dijkstra(graph,start,end){
+async function calculateStreetFallback(){
+
+ if(
+  !player ||
+  !zombie ||
+  gameOver
+ ){
+  return;
+ }
+
+
+ document.getElementById("nav").textContent=
+ "STREET";
+
+
+ document.getElementById("debug").textContent=
+ "Finding walking-network route…";
+
+
+ try{
+
+  let request={
+
+   locations:[
+
+    {
+     lat:zombie.lat,
+     lon:zombie.lng,
+     type:"break"
+    },
+
+    {
+     lat:player.lat,
+     lon:player.lng,
+     type:"break"
+    }
+
+   ],
+
+   costing:"pedestrian"
+
+  };
+
+
+  let url=
+
+   "https://valhalla1.openstreetmap.de/route?json="+
+
+   encodeURIComponent(
+    JSON.stringify(request)
+   );
+
+
+  let response=
+   await fetch(url);
+
+
+  if(!response.ok){
+
+   throw new Error(
+    "Routing request failed"
+   );
+
+  }
+
+
+  let data=
+   await response.json();
+
+
+  if(
+   !data.trip ||
+   !data.trip.legs ||
+   !data.trip.legs[0] ||
+   !data.trip.legs[0].shape
+  ){
+
+   throw new Error(
+    "No walking route returned"
+   );
+
+  }
+
+
+  route=
+   decodePolyline6(
+    data.trip.legs[0].shape
+   );
+
+
+  /*
+  Find the closest route point to the
+  zombie rather than blindly skipping
+  the first point.
+  */
+
+  routeIndex=
+   closestRouteIndex(
+    zombie,
+    route
+   );
+
+
+  if(
+   routeIndex<
+   route.length-1
+  ){
+   routeIndex++;
+  }
+
+
+  drawRoute(
+   route,
+   "#3b82f6"
+  );
+
+
+  document.getElementById("nav").textContent=
+  "STREET";
+
+
+  document.getElementById("debug").textContent=
+  "Walking-network fallback active.";
+
+
+ }catch(e){
+
+  document.getElementById("nav").textContent=
+  "RETRYING";
+
+
+  document.getElementById("debug").textContent=
+  "Route temporarily unavailable — retrying…";
+
+
+  setTimeout(
+   calculateHybridRoute,
+   5000
+  );
+
+ }
+
+}
+
+
+/* =========================
+   ROUTE DRAWING
+========================= */
+
+function drawRoute(points,color){
+
+ if(routeLine){
+
+  map.removeLayer(
+   routeLine
+  );
+
+ }
+
+
+ routeLine=
+  L.polyline(
+   points,
+   {
+    color:color,
+    weight:5,
+    opacity:.8,
+    dashArray:"7,8"
+   }
+  ).addTo(map);
+
+}
+
+
+/* =========================
+   DIJKSTRA
+========================= */
+
+function dijkstra(
+ graph,
+ start,
+ end
+){
 
  let dist=
-  Array(graph.length).fill(Infinity);
+  Array(
+   graph.length
+  ).fill(Infinity);
+
 
  let previous=
-  Array(graph.length).fill(null);
+  Array(
+   graph.length
+  ).fill(null);
+
 
  let visited=
-  Array(graph.length).fill(false);
+  Array(
+   graph.length
+  ).fill(false);
+
 
  dist[start]=0;
 
 
- for(let count=0;count<graph.length;count++){
+ for(
+  let count=0;
+  count<graph.length;
+  count++
+ ){
 
   let u=-1;
   let best=Infinity;
 
-  for(let i=0;i<graph.length;i++){
 
-   if(!visited[i] && dist[i]<best){
+  for(
+   let i=0;
+   i<graph.length;
+   i++
+  ){
+
+   if(
+    !visited[i] &&
+    dist[i]<best
+   ){
+
     best=dist[i];
     u=i;
+
    }
 
   }
 
-  if(u===-1) break;
-  if(u===end) break;
+
+  if(u===-1){
+   break;
+  }
+
+
+  if(u===end){
+   break;
+  }
+
 
   visited[u]=true;
 
 
-  for(let edge of graph[u]){
+  for(
+   let edge of graph[u]
+  ){
 
    let alt=
-    dist[u]+edge.cost;
+    dist[u]+
+    edge.cost;
 
-   if(alt<dist[edge.node]){
+
+   if(
+    alt<
+    dist[edge.node]
+   ){
 
     dist[edge.node]=alt;
+
     previous[edge.node]=u;
 
    }
@@ -576,7 +1209,11 @@ function dijkstra(graph,start,end){
  }
 
 
- if(!isFinite(dist[end])){
+ if(
+  !isFinite(
+   dist[end]
+  )
+ ){
   return null;
  }
 
@@ -584,41 +1221,65 @@ function dijkstra(graph,start,end){
  let path=[];
  let u=end;
 
- while(u!==null){
+
+ while(
+  u!==null
+ ){
 
   path.unshift(u);
 
-  if(u===start) break;
 
-  u=previous[u];
+  if(
+   u===start
+  ){
+   break;
+  }
+
+
+  u=
+   previous[u];
 
  }
+
 
  return path;
 
 }
 
 
-/* ---------- COLLISION ---------- */
+/* =========================
+   COLLISION
+========================= */
 
 function lineHitsObstacle(a,b){
 
- for(let obstacle of obstacles){
+ for(
+  let obstacle of obstacles
+ ){
 
-  let pts=obstacle.points;
+  let pts=
+   obstacle.points;
 
-  for(let i=0;i<pts.length-1;i++){
+
+  for(
+   let i=0;
+   i<pts.length-1;
+   i++
+  ){
 
    if(
     segmentsIntersect(
-     a,b,
-     pts[i],pts[i+1]
+     a,
+     b,
+     pts[i],
+     pts[i+1]
     )
    ){
     return true;
    }
 
   }
+
 
   if(
    obstacle.closed &&
@@ -627,7 +1288,8 @@ function lineHitsObstacle(a,b){
 
    if(
     segmentsIntersect(
-     a,b,
+     a,
+     b,
      pts[pts.length-1],
      pts[0]
     )
@@ -646,7 +1308,9 @@ function lineHitsObstacle(a,b){
 
 function pointInsideSolid(point){
 
- for(let obstacle of obstacles){
+ for(
+  let obstacle of obstacles
+ ){
 
   if(
    obstacle.closed &&
@@ -665,13 +1329,20 @@ function pointInsideSolid(point){
 }
 
 
-function pointInPolygon(p,poly){
+function pointInPolygon(
+ p,
+ poly
+){
 
  let inside=false;
 
+
  for(
-  let i=0,j=poly.length-1;
+  let i=0,
+      j=poly.length-1;
+
   i<poly.length;
+
   j=i++
  ){
 
@@ -681,14 +1352,23 @@ function pointInPolygon(p,poly){
   let xj=poly[j].lng;
   let yj=poly[j].lat;
 
+
   let intersect=
-   ((yi>p.lat)!==(yj>p.lat)) &&
+
+   ((yi>p.lat)!==
+    (yj>p.lat))
+
+   &&
+
    (
     p.lng <
+
     (xj-xi)*
     (p.lat-yi)/
-    (yj-yi)+xi
+    ((yj-yi)||0.0000001)
+    +xi
    );
+
 
   if(intersect){
    inside=!inside;
@@ -701,33 +1381,60 @@ function pointInPolygon(p,poly){
 }
 
 
-function segmentsIntersect(a,b,c,d){
+function segmentsIntersect(
+ a,b,c,d
+){
 
- function orientation(p,q,r){
+ function orientation(
+  p,q,r
+ ){
 
   return(
    (q.lng-p.lng)*
-   (r.lat-p.lat)-
+   (r.lat-p.lat)
+   -
    (q.lat-p.lat)*
    (r.lng-p.lng)
   );
 
  }
 
- let o1=orientation(a,b,c);
- let o2=orientation(a,b,d);
- let o3=orientation(c,d,a);
- let o4=orientation(c,d,b);
+
+ let o1=
+  orientation(a,b,c);
+
+ let o2=
+  orientation(a,b,d);
+
+ let o3=
+  orientation(c,d,a);
+
+ let o4=
+  orientation(c,d,b);
+
 
  return(
-  ((o1>0&&o2<0)||(o1<0&&o2>0)) &&
-  ((o3>0&&o4<0)||(o3<0&&o4>0))
+
+  (
+   (o1>0 && o2<0) ||
+   (o1<0 && o2>0)
+  )
+
+  &&
+
+  (
+   (o3>0 && o4<0) ||
+   (o3<0 && o4>0)
+  )
+
  );
 
 }
 
 
-/* ---------- MOVEMENT ---------- */
+/* =========================
+   ZOMBIE MOVEMENT
+========================= */
 
 function moveZombie(){
 
@@ -736,53 +1443,80 @@ function moveZombie(){
   !zombie ||
   route.length<2 ||
   routeIndex>=route.length
- ) return;
+ ){
+  return;
+ }
+
 
  /*
- 1.25m/s.
+ Walker speed:
+ 1.25 metres per second.
+
+ Update every 0.5 seconds.
  */
 
- let remaining=.625;
+ let remaining=
+  0.625;
 
 
  while(
   remaining>0 &&
-  routeIndex<route.length
+  routeIndex<
+  route.length
  ){
 
-  let target=route[routeIndex];
-
-  let d=distanceMeters(
-   zombie.lat,zombie.lng,
-   target[0],target[1]
-  );
+  let target=
+   route[routeIndex];
 
 
-  if(d<=remaining){
+  let d=
+   distanceMeters(
+    zombie.lat,
+    zombie.lng,
+    target[0],
+    target[1]
+   );
 
-   zombie.lat=target[0];
-   zombie.lng=target[1];
+
+  if(
+   d<=remaining
+  ){
+
+   zombie.lat=
+    target[0];
+
+   zombie.lng=
+    target[1];
 
    remaining-=d;
+
    routeIndex++;
 
   }else{
 
    let bearing=
     bearingBetween(
-     zombie.lat,zombie.lng,
-     target[0],target[1]
+     zombie.lat,
+     zombie.lng,
+     target[0],
+     target[1]
     );
+
 
    let next=
     pointFromDistance(
-     zombie.lat,zombie.lng,
+     zombie.lat,
+     zombie.lng,
      remaining,
      bearing
     );
 
-   zombie.lat=next.lat;
-   zombie.lng=next.lng;
+
+   zombie.lat=
+    next.lat;
+
+   zombie.lng=
+    next.lng;
 
    remaining=0;
 
@@ -791,26 +1525,41 @@ function moveZombie(){
  }
 
 
- zombieMarker.setLatLng([
-  zombie.lat,
-  zombie.lng
- ]);
+ zombieMarker.setLatLng(
+  [
+   zombie.lat,
+   zombie.lng
+  ]
+ );
+
 
  updateThreat();
 
 }
 
 
-/* ---------- THREAT ---------- */
+/* =========================
+   THREAT
+========================= */
 
 function updateThreat(){
 
- if(!player || !zombie) return;
+ if(
+  !player ||
+  !zombie
+ ){
+  return;
+ }
 
- let d=distanceMeters(
-  player.lat,player.lng,
-  zombie.lat,zombie.lng
- );
+
+ let d=
+  distanceMeters(
+   player.lat,
+   player.lng,
+   zombie.lat,
+   zombie.lng
+  );
+
 
  document.getElementById("closest").textContent=
  Math.round(d)+" m";
@@ -823,73 +1572,256 @@ function updateThreat(){
  if(d>150){
 
   warning.textContent=
-   "🟢 No immediate threat";
+  "🟢 No immediate threat";
 
  }else if(d>75){
 
   warning.textContent=
-   "🟡 INFECTED NEARBY";
+  "🟡 INFECTED NEARBY";
 
  }else if(d>25){
 
   warning.textContent=
-   "🔴 RUN — INFECTED CLOSING";
+  "🔴 RUN — INFECTED CLOSING";
 
  }else{
 
   gameOver=true;
+
   stopGame();
 
-  alert("💀 CAUGHT");
+  alert(
+   "💀 CAUGHT"
+  );
 
  }
 
 }
 
 
-/* ---------- TIMER ---------- */
+/* =========================
+   TIMER
+========================= */
 
 function tick(){
 
  seconds--;
 
- let m=Math.floor(seconds/60);
- let s=seconds%60;
+
+ let m=
+  Math.floor(
+   seconds/60
+  );
+
+
+ let s=
+  seconds%60;
+
 
  document.getElementById("timer").textContent=
- String(m).padStart(2,"0")+
- ":"+
- String(s).padStart(2,"0");
+
+ String(m).padStart(
+  2,
+  "0"
+ )
+
+ +
+
+ ":"
+
+ +
+
+ String(s).padStart(
+  2,
+  "0"
+ );
+
 
  if(seconds<=0){
 
   gameOver=true;
+
   stopGame();
 
-  alert("YOU SURVIVED!");
+  alert(
+   "YOU SURVIVED!"
+  );
 
  }
 
 }
 
 
-/* ---------- GEO ---------- */
+/* =========================
+   VALHALLA POLYLINE
+========================= */
 
-function distanceMeters(a,b,c,d){
+function decodePolyline6(encoded){
 
- const R=6371000;
+ let coordinates=[];
 
- const p1=a*Math.PI/180;
- const p2=c*Math.PI/180;
+ let index=0;
+ let lat=0;
+ let lng=0;
 
- const dp=(c-a)*Math.PI/180;
- const dl=(d-b)*Math.PI/180;
+
+ while(
+  index<
+  encoded.length
+ ){
+
+  let result=0;
+  let shift=0;
+  let byte;
+
+
+  do{
+
+   byte=
+    encoded.charCodeAt(
+     index++
+    )-63;
+
+   result|=
+    (byte&31)<<shift;
+
+   shift+=5;
+
+  }while(
+   byte>=32
+  );
+
+
+  lat+=
+   (result&1)
+   ? ~(result>>1)
+   : (result>>1);
+
+
+  result=0;
+  shift=0;
+
+
+  do{
+
+   byte=
+    encoded.charCodeAt(
+     index++
+    )-63;
+
+   result|=
+    (byte&31)<<shift;
+
+   shift+=5;
+
+  }while(
+   byte>=32
+  );
+
+
+  lng+=
+   (result&1)
+   ? ~(result>>1)
+   : (result>>1);
+
+
+  coordinates.push(
+   [
+    lat/1e6,
+    lng/1e6
+   ]
+  );
+
+ }
+
+
+ return coordinates;
+
+}
+
+
+/* =========================
+   ROUTE POSITION
+========================= */
+
+function closestRouteIndex(
+ point,
+ points
+){
+
+ let bestIndex=0;
+ let bestDistance=Infinity;
+
+
+ for(
+  let i=0;
+  i<points.length;
+  i++
+ ){
+
+  let d=
+   distanceMeters(
+    point.lat,
+    point.lng,
+    points[i][0],
+    points[i][1]
+   );
+
+
+  if(
+   d<
+   bestDistance
+  ){
+
+   bestDistance=d;
+   bestIndex=i;
+
+  }
+
+ }
+
+
+ return bestIndex;
+
+}
+
+
+/* =========================
+   GEOGRAPHY
+========================= */
+
+function distanceMeters(
+ a,b,c,d
+){
+
+ const R=
+  6371000;
+
+
+ const p1=
+  a*Math.PI/180;
+
+ const p2=
+  c*Math.PI/180;
+
+
+ const dp=
+  (c-a)*Math.PI/180;
+
+ const dl=
+  (d-b)*Math.PI/180;
+
 
  const x=
-  Math.sin(dp/2)**2+
+
+  Math.sin(dp/2)**2
+
+  +
+
   Math.cos(p1)*
   Math.cos(p2)*
   Math.sin(dl/2)**2;
+
 
  return R*2*Math.atan2(
   Math.sqrt(x),
@@ -899,23 +1831,37 @@ function distanceMeters(a,b,c,d){
 }
 
 
-function bearingBetween(a,b,c,d){
+function bearingBetween(
+ a,b,c,d
+){
 
- const p1=a*Math.PI/180;
- const p2=c*Math.PI/180;
+ const p1=
+  a*Math.PI/180;
 
- const dl=(d-b)*Math.PI/180;
+ const p2=
+  c*Math.PI/180;
+
+
+ const dl=
+  (d-b)*Math.PI/180;
+
 
  const y=
   Math.sin(dl)*
   Math.cos(p2);
 
+
  const x=
+
   Math.cos(p1)*
-  Math.sin(p2)-
+  Math.sin(p2)
+
+  -
+
   Math.sin(p1)*
   Math.cos(p2)*
   Math.cos(dl);
+
 
  return(
   Math.atan2(y,x)*
@@ -926,48 +1872,98 @@ function bearingBetween(a,b,c,d){
 }
 
 
-function pointFromDistance(lat,lng,m,bearing){
+function pointFromDistance(
+ lat,
+ lng,
+ metres,
+ bearing
+){
 
- const R=6371000;
+ const R=
+  6371000;
 
- const d=m/R;
- const br=bearing*Math.PI/180;
 
- const p1=lat*Math.PI/180;
- const l1=lng*Math.PI/180;
+ const distance=
+  metres/R;
 
- const p2=Math.asin(
-  Math.sin(p1)*Math.cos(d)+
-  Math.cos(p1)*Math.sin(d)*Math.cos(br)
- );
 
- const l2=l1+Math.atan2(
-  Math.sin(br)*
-  Math.sin(d)*
-  Math.cos(p1),
+ const br=
+  bearing*
+  Math.PI/180;
 
-  Math.cos(d)-
-  Math.sin(p1)*
-  Math.sin(p2)
- );
+
+ const p1=
+  lat*
+  Math.PI/180;
+
+
+ const l1=
+  lng*
+  Math.PI/180;
+
+
+ const p2=
+  Math.asin(
+
+   Math.sin(p1)*
+   Math.cos(distance)
+
+   +
+
+   Math.cos(p1)*
+   Math.sin(distance)*
+   Math.cos(br)
+
+  );
+
+
+ const l2=
+  l1+
+  Math.atan2(
+
+   Math.sin(br)*
+   Math.sin(distance)*
+   Math.cos(p1),
+
+   Math.cos(distance)
+   -
+   Math.sin(p1)*
+   Math.sin(p2)
+
+  );
+
 
  return{
-  lat:p2*180/Math.PI,
-  lng:l2*180/Math.PI
+
+  lat:
+   p2*
+   180/Math.PI,
+
+  lng:
+   l2*
+   180/Math.PI
+
  };
 
 }
 
 
-/* ---------- CONTROLS ---------- */
+/* =========================
+   CONTROLS
+========================= */
 
 document.getElementById("recenter").onclick=()=>{
 
  if(player){
+
   map.setView(
-   [player.lat,player.lng],
+   [
+    player.lat,
+    player.lng
+   ],
    17
   );
+
  }
 
 };
@@ -976,6 +1972,7 @@ document.getElementById("recenter").onclick=()=>{
 document.getElementById("end").onclick=()=>{
 
  stopGame();
+
  location.reload();
 
 };
@@ -983,16 +1980,32 @@ document.getElementById("end").onclick=()=>{
 
 function stopGame(){
 
- clearInterval(timerID);
- clearInterval(moveTimer);
- clearInterval(rerouteTimer);
+ clearInterval(
+  timerID
+ );
 
- if(watchID!==undefined){
-  navigator.geolocation.clearWatch(watchID);
+ clearInterval(
+  moveTimer
+ );
+
+ clearInterval(
+  rerouteTimer
+ );
+
+
+ if(
+  watchID!==undefined
+ ){
+
+  navigator.geolocation.clearWatch(
+   watchID
+  );
+
  }
 
 }
 
 </script>
+
 </body>
 </html>
