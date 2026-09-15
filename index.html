@@ -8,147 +8,237 @@
 
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-<title>Zombie Evasion</title>
+<title>Zombie Evasion V3</title>
 
-<link
+<link rel="stylesheet"
 
-  rel="stylesheet"
-
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-
-/>
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
-* { box-sizing: border-box; }
+*{box-sizing:border-box}
 
-body {
+body{
 
-  margin: 0;
+ margin:0;
 
-  background: #0d0f10;
+ background:#0b0d0e;
 
-  color: white;
+ color:white;
 
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
-}
-
-main {
-
-  max-width: 600px;
-
-  margin: auto;
-
-  padding: 24px;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 
 }
 
-.panel {
+main{
 
-  background: #1b1e21;
+ max-width:600px;
 
-  border-radius: 24px;
+ margin:auto;
 
-  padding: 24px;
-
-}
-
-h1 {
-
-  font-size: 38px;
-
-  margin-top: 0;
+ padding:18px;
 
 }
 
-.tagline {
+.panel{
 
-  font-size: 20px;
+ background:#1b1e21;
 
-  font-weight: 700;
+ border-radius:24px;
 
-}
-
-button {
-
-  width: 100%;
-
-  padding: 20px;
-
-  margin-top: 14px;
-
-  border: 0;
-
-  border-radius: 18px;
-
-  font-size: 20px;
-
-  font-weight: 800;
-
-  color: #2878ff;
+ padding:20px;
 
 }
 
-#game {
+h1{
 
-  display: none;
+ font-size:38px;
 
-}
-
-#timer {
-
-  font-size: 42px;
-
-  font-weight: 800;
-
-  margin-bottom: 18px;
+ margin:0 0 15px;
 
 }
 
-#map {
+.tagline{
 
-  width: 100%;
+ font-size:20px;
 
-  height: 55vh;
-
-  min-height: 420px;
-
-  border-radius: 20px;
-
-  overflow: hidden;
+ font-weight:700;
 
 }
 
-#gps {
+button{
 
-  font-size: 17px;
+ width:100%;
 
-  margin: 18px 0 4px;
+ padding:19px;
+
+ margin-top:14px;
+
+ border:0;
+
+ border-radius:18px;
+
+ font-size:20px;
+
+ font-weight:800;
+
+ color:#2878ff;
 
 }
 
-#status {
+#game{display:none}
 
-  font-size: 15px;
+#timer{
 
-  color: #b8c0c8;
+ font-size:42px;
+
+ font-weight:900;
+
+ margin-bottom:12px;
 
 }
 
-.player-icon {
+#hud{
 
-  background: #1677ff;
+ display:grid;
 
-  border: 4px solid white;
+ grid-template-columns:1fr 1fr;
 
-  border-radius: 50%;
+ gap:8px;
 
-  width: 24px !important;
+ margin-bottom:12px;
 
-  height: 24px !important;
+}
 
-  box-shadow: 0 0 12px rgba(0,0,0,.6);
+.hudbox{
+
+ background:#292d31;
+
+ padding:10px;
+
+ border-radius:12px;
+
+ font-size:14px;
+
+}
+
+.hudvalue{
+
+ display:block;
+
+ font-size:20px;
+
+ font-weight:800;
+
+ margin-top:3px;
+
+}
+
+#warning{
+
+ padding:11px;
+
+ margin-bottom:12px;
+
+ border-radius:12px;
+
+ text-align:center;
+
+ font-weight:900;
+
+ background:#253126;
+
+}
+
+#map{
+
+ width:100%;
+
+ height:52vh;
+
+ min-height:400px;
+
+ border-radius:20px;
+
+ overflow:hidden;
+
+}
+
+#gps{
+
+ font-size:15px;
+
+ margin:14px 0 4px;
+
+}
+
+.player-icon{
+
+ background:#1677ff;
+
+ border:4px solid white;
+
+ border-radius:50%;
+
+ width:24px!important;
+
+ height:24px!important;
+
+ box-shadow:0 0 12px #000;
+
+}
+
+.zombie-icon{
+
+ font-size:32px;
+
+ line-height:32px;
+
+ text-align:center;
+
+}
+
+#caught{
+
+ display:none;
+
+ position:fixed;
+
+ inset:0;
+
+ background:rgba(0,0,0,.92);
+
+ z-index:9999;
+
+ align-items:center;
+
+ justify-content:center;
+
+ text-align:center;
+
+ padding:30px;
+
+}
+
+#caughtBox{
+
+ max-width:420px;
+
+ width:100%;
+
+}
+
+#caught h2{
+
+ font-size:50px;
+
+ margin:0;
+
+}
+
+#caught p{
+
+ font-size:22px;
 
 }
 
@@ -158,43 +248,93 @@ button {
 
 <body>
 
+<div id="caught">
+
+ <div id="caughtBox">
+
+  <h2>💀 CAUGHT</h2>
+
+  <p>The infected reached you.</p>
+
+  <button onclick="location.reload()">TRY AGAIN</button>
+
+ </div>
+
+</div>
+
 <main>
 
 <section id="home" class="panel">
 
-  <h1>🧟 Zombie Evasion</h1>
+<h1>🧟 Zombie Evasion</h1>
 
-  <p class="tagline">
+<p class="tagline">
 
-    You weren't out for a run. You were trying to survive.
+You weren't out for a run.<br>
 
-  </p>
+You were trying to survive.
 
-  <p>
+</p>
 
-    Your real location becomes the game world.
+<p>
 
-  </p>
+Three infected will spawn somewhere around you.
 
-  <button id="start">START RUN</button>
+Once they detect you, they start closing in.
+
+</p>
+
+<button id="start">START RUN</button>
 
 </section>
 
 <section id="game" class="panel">
 
-  <div id="timer">30:00</div>
+<div id="timer">30:00</div>
 
-  <div id="map"></div>
+<div id="hud">
 
-  <p id="gps">Waiting for GPS…</p>
+ <div class="hudbox">
 
-  <p id="status">
+  INFECTED
 
-    Stay alive.
+  <span class="hudvalue" id="infected">3</span>
 
-  </p>
+ </div>
 
-  <button id="end">END RUN</button>
+ <div class="hudbox">
+
+  CLOSEST
+
+  <span class="hudvalue" id="closest">---</span>
+
+ </div>
+
+ <div class="hudbox">
+
+  DISTANCE
+
+  <span class="hudvalue" id="distance">0.00 km</span>
+
+ </div>
+
+ <div class="hudbox">
+
+  STATUS
+
+  <span class="hudvalue" id="status">SAFE</span>
+
+ </div>
+
+</div>
+
+<div id="warning">🟢 No immediate threat</div>
+
+<div id="map"></div>
+
+<p id="gps">Waiting for GPS…</p>
+
+<button id="end">END RUN</button>
 
 </section>
 
@@ -212,219 +352,629 @@ let accuracyCircle;
 
 let watchID;
 
-let seconds = 1800;
-
 let timerID;
 
-/* START GAME */
+let zombieTimer;
 
-document.getElementById("start").onclick = function () {
+let seconds=1800;
 
-  document.getElementById("home").style.display = "none";
+let player=null;
 
-  document.getElementById("game").style.display = "block";
+let lastPlayer=null;
 
-  startTimer();
+let totalDistance=0;
 
-  startMap();
+let zombies=[];
+
+let gameStarted=false;
+
+let gameOver=false;
+
+/* ---------- START ---------- */
+
+document.getElementById("start").onclick=function(){
+
+ document.getElementById("home").style.display="none";
+
+ document.getElementById("game").style.display="block";
+
+ startTimer();
+
+ startMap();
 
 };
 
-/* TIMER */
+/* ---------- TIMER ---------- */
 
-function startTimer() {
+function startTimer(){
+
+ updateTimer();
+
+ timerID=setInterval(function(){
+
+  seconds--;
 
   updateTimer();
 
-  timerID = setInterval(function () {
+  if(seconds<=0){
 
-    seconds--;
+   clearInterval(timerID);
 
-    updateTimer();
+   clearInterval(zombieTimer);
 
-    if (seconds <= 0) {
-
-      clearInterval(timerID);
-
-      alert("YOU SURVIVED.");
-
-    }
-
-  },1000);
-
-}
-
-function updateTimer() {
-
-  let mins = Math.floor(seconds / 60);
-
-  let secs = seconds % 60;
-
-  document.getElementById("timer").textContent =
-
-    String(mins).padStart(2,"0") +
-
-    ":" +
-
-    String(secs).padStart(2,"0");
-
-}
-
-/* MAP */
-
-function startMap() {
-
-  map = L.map("map", {
-
-    zoomControl: false
-
-  }).setView([51.5,-0.1],15);
-
-  L.tileLayer(
-
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-
-    {
-
-      maxZoom: 19,
-
-      attribution: "&copy; OpenStreetMap contributors"
-
-    }
-
-  ).addTo(map);
-
-  setTimeout(function(){
-
-    map.invalidateSize();
-
-  },300);
-
-  requestGPS();
-
-}
-
-/* GPS */
-
-function requestGPS() {
-
-  if (!navigator.geolocation) {
-
-    document.getElementById("gps").textContent =
-
-      "GPS unavailable.";
-
-    return;
+   alert("YOU SURVIVED THE OUTBREAK!");
 
   }
 
-  document.getElementById("gps").textContent =
+ },1000);
 
-    "Finding your location…";
+}
 
-  watchID = navigator.geolocation.watchPosition(
+function updateTimer(){
 
-    gpsSuccess,
+ let m=Math.floor(seconds/60);
 
-    gpsError,
+ let s=seconds%60;
 
-    {
+ document.getElementById("timer").textContent=
 
-      enableHighAccuracy: true,
+ String(m).padStart(2,"0")+":"+
 
-      maximumAge: 1000,
+ String(s).padStart(2,"0");
 
-      timeout: 15000
+}
 
-    }
+/* ---------- MAP ---------- */
+
+function startMap(){
+
+ map=L.map("map",{
+
+  zoomControl:false
+
+ }).setView([51.5,-0.1],16);
+
+ L.tileLayer(
+
+ "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
+ {
+
+  maxZoom:19,
+
+  attribution:"&copy; OpenStreetMap contributors"
+
+ }).addTo(map);
+
+ setTimeout(function(){
+
+  map.invalidateSize();
+
+ },300);
+
+ requestGPS();
+
+}
+
+/* ---------- GPS ---------- */
+
+function requestGPS(){
+
+ if(!navigator.geolocation){
+
+  document.getElementById("gps").textContent=
+
+  "GPS unavailable.";
+
+  return;
+
+ }
+
+ document.getElementById("gps").textContent=
+
+ "Acquiring GPS…";
+
+ watchID=navigator.geolocation.watchPosition(
+
+  gpsSuccess,
+
+  gpsError,
+
+  {
+
+   enableHighAccuracy:true,
+
+   maximumAge:1000,
+
+   timeout:15000
+
+  }
+
+ );
+
+}
+
+function gpsSuccess(position){
+
+ const lat=position.coords.latitude;
+
+ const lng=position.coords.longitude;
+
+ const accuracy=position.coords.accuracy;
+
+ const newPlayer={lat:lat,lng:lng};
+
+ document.getElementById("gps").textContent=
+
+ "GPS working — accuracy ±"+
+
+ Math.round(accuracy)+"m";
+
+ if(lastPlayer){
+
+  let moved=distanceMeters(
+
+   lastPlayer.lat,
+
+   lastPlayer.lng,
+
+   lat,
+
+   lng
 
   );
 
-}
+  /*
 
-function gpsSuccess(position) {
+  Ignore tiny GPS jitter.
 
-  const lat = position.coords.latitude;
+  */
 
-  const lng = position.coords.longitude;
+  if(moved>3 && moved<100){
 
-  const accuracy = position.coords.accuracy;
-
-  document.getElementById("gps").textContent =
-
-    "GPS working — accuracy ±" +
-
-    Math.round(accuracy) +
-
-    "m";
-
-  const location = [lat,lng];
-
-  if (!playerMarker) {
-
-    const playerIcon = L.divIcon({
-
-      className: "player-icon",
-
-      iconSize: [24,24]
-
-    });
-
-    playerMarker =
-
-      L.marker(location,{icon:playerIcon})
-
-      .addTo(map);
-
-    accuracyCircle =
-
-      L.circle(location,{
-
-        radius: accuracy,
-
-        weight: 1,
-
-        fillOpacity: 0.08
-
-      }).addTo(map);
-
-    map.setView(location,17);
-
-  } else {
-
-    playerMarker.setLatLng(location);
-
-    accuracyCircle.setLatLng(location);
-
-    accuracyCircle.setRadius(accuracy);
-
-    map.panTo(location);
+   totalDistance+=moved;
 
   }
 
+ }
+
+ lastPlayer=newPlayer;
+
+ player=newPlayer;
+
+ document.getElementById("distance").textContent=
+
+ (totalDistance/1000).toFixed(2)+" km";
+
+ const location=[lat,lng];
+
+ if(!playerMarker){
+
+  const playerIcon=L.divIcon({
+
+   className:"player-icon",
+
+   iconSize:[24,24]
+
+  });
+
+  playerMarker=L.marker(
+
+   location,
+
+   {icon:playerIcon,zIndexOffset:1000}
+
+  ).addTo(map);
+
+  accuracyCircle=L.circle(
+
+   location,
+
+   {
+
+    radius:accuracy,
+
+    weight:1,
+
+    fillOpacity:.07
+
+   }
+
+  ).addTo(map);
+
+  map.setView(location,17);
+
+ }else{
+
+  playerMarker.setLatLng(location);
+
+  accuracyCircle.setLatLng(location);
+
+  accuracyCircle.setRadius(accuracy);
+
+  map.panTo(location);
+
+ }
+
+ if(!gameStarted){
+
+  gameStarted=true;
+
+  spawnZombies();
+
+  /*
+
+  Zombies update every second.
+
+  */
+
+  zombieTimer=setInterval(moveZombies,1000);
+
+ }
+
+ updateThreat();
+
 }
 
-function gpsError(error) {
+function gpsError(error){
 
-  document.getElementById("gps").textContent =
+ document.getElementById("gps").textContent=
 
-    "GPS error: " + error.message;
+ "GPS error: "+error.message;
 
 }
 
-/* END GAME */
+/* ---------- ZOMBIES ---------- */
 
-document.getElementById("end").onclick = function () {
+function spawnZombies(){
 
-  if (watchID !== undefined) {
+ /*
 
-    navigator.geolocation.clearWatch(watchID);
+ Each zombie starts 180–350 metres away.
+
+ */
+
+ for(let i=0;i<3;i++){
+
+  let bearing=Math.random()*360;
+
+  let distance=180+Math.random()*170;
+
+  let position=
+
+   pointFromDistance(
+
+    player.lat,
+
+    player.lng,
+
+    distance,
+
+    bearing
+
+   );
+
+  let icon=L.divIcon({
+
+   html:"🧟",
+
+   className:"zombie-icon",
+
+   iconSize:[36,36],
+
+   iconAnchor:[18,18]
+
+  });
+
+  let marker=L.marker(
+
+   [position.lat,position.lng],
+
+   {icon:icon}
+
+  ).addTo(map);
+
+  zombies.push({
+
+   lat:position.lat,
+
+   lng:position.lng,
+
+   marker:marker,
+
+   speed:1.15+Math.random()*.45
+
+  });
+
+ }
+
+ updateThreat();
+
+}
+
+/* ---------- PURSUIT ---------- */
+
+function moveZombies(){
+
+ if(!player || gameOver) return;
+
+ zombies.forEach(function(zombie){
+
+  let distance=distanceMeters(
+
+   zombie.lat,
+
+   zombie.lng,
+
+   player.lat,
+
+   player.lng
+
+  );
+
+  /*
+
+  Zombie movement in metres per second.
+
+  Slightly faster as it gets close.
+
+  */
+
+  let step=zombie.speed;
+
+  if(distance<100){
+
+   step*=1.15;
 
   }
 
-  clearInterval(timerID);
+  if(distance<50){
 
-  location.reload();
+   step*=1.15;
+
+  }
+
+  if(step>distance){
+
+   step=distance;
+
+  }
+
+  let bearing=bearingBetween(
+
+   zombie.lat,
+
+   zombie.lng,
+
+   player.lat,
+
+   player.lng
+
+  );
+
+  let next=pointFromDistance(
+
+   zombie.lat,
+
+   zombie.lng,
+
+   step,
+
+   bearing
+
+  );
+
+  zombie.lat=next.lat;
+
+  zombie.lng=next.lng;
+
+  zombie.marker.setLatLng([
+
+   zombie.lat,
+
+   zombie.lng
+
+  ]);
+
+ });
+
+ updateThreat();
+
+}
+
+/* ---------- THREAT SYSTEM ---------- */
+
+function updateThreat(){
+
+ if(!player || zombies.length===0) return;
+
+ let closest=Infinity;
+
+ zombies.forEach(function(zombie){
+
+  let d=distanceMeters(
+
+   player.lat,
+
+   player.lng,
+
+   zombie.lat,
+
+   zombie.lng
+
+  );
+
+  if(d<closest) closest=d;
+
+ });
+
+ document.getElementById("closest").textContent=
+
+ Math.round(closest)+" m";
+
+ let status=document.getElementById("status");
+
+ let warning=document.getElementById("warning");
+
+ if(closest>150){
+
+  status.textContent="SAFE";
+
+  warning.textContent="🟢 No immediate threat";
+
+ }else if(closest>75){
+
+  status.textContent="ALERT";
+
+  warning.textContent="🟡 Infected nearby";
+
+ }else if(closest>25){
+
+  status.textContent="DANGER";
+
+  warning.textContent=
+
+  "🔴 RUN — INFECTED CLOSING";
+
+ }else{
+
+  caught();
+
+ }
+
+}
+
+/* ---------- CAUGHT ---------- */
+
+function caught(){
+
+ if(gameOver) return;
+
+ gameOver=true;
+
+ clearInterval(timerID);
+
+ clearInterval(zombieTimer);
+
+ if(watchID!==undefined){
+
+  navigator.geolocation.clearWatch(watchID);
+
+ }
+
+ document.getElementById("caught").style.display="flex";
+
+}
+
+/* ---------- GPS MATH ---------- */
+
+function distanceMeters(lat1,lon1,lat2,lon2){
+
+ const R=6371000;
+
+ const p1=lat1*Math.PI/180;
+
+ const p2=lat2*Math.PI/180;
+
+ const dp=(lat2-lat1)*Math.PI/180;
+
+ const dl=(lon2-lon1)*Math.PI/180;
+
+ const a=
+
+ Math.sin(dp/2)*Math.sin(dp/2)+
+
+ Math.cos(p1)*Math.cos(p2)*
+
+ Math.sin(dl/2)*Math.sin(dl/2);
+
+ return R*2*Math.atan2(
+
+  Math.sqrt(a),
+
+  Math.sqrt(1-a)
+
+ );
+
+}
+
+function bearingBetween(lat1,lon1,lat2,lon2){
+
+ const p1=lat1*Math.PI/180;
+
+ const p2=lat2*Math.PI/180;
+
+ const dl=(lon2-lon1)*Math.PI/180;
+
+ const y=Math.sin(dl)*Math.cos(p2);
+
+ const x=
+
+ Math.cos(p1)*Math.sin(p2)-
+
+ Math.sin(p1)*Math.cos(p2)*Math.cos(dl);
+
+ return(
+
+  Math.atan2(y,x)*180/Math.PI+360
+
+ )%360;
+
+}
+
+function pointFromDistance(lat,lng,metres,bearing){
+
+ const R=6371000;
+
+ const d=metres/R;
+
+ const b=bearing*Math.PI/180;
+
+ const p1=lat*Math.PI/180;
+
+ const l1=lng*Math.PI/180;
+
+ const p2=Math.asin(
+
+  Math.sin(p1)*Math.cos(d)+
+
+  Math.cos(p1)*Math.sin(d)*Math.cos(b)
+
+ );
+
+ const l2=l1+Math.atan2(
+
+  Math.sin(b)*Math.sin(d)*Math.cos(p1),
+
+  Math.cos(d)-Math.sin(p1)*Math.sin(p2)
+
+ );
+
+ return{
+
+  lat:p2*180/Math.PI,
+
+  lng:l2*180/Math.PI
+
+ };
+
+}
+
+/* ---------- END ---------- */
+
+document.getElementById("end").onclick=function(){
+
+ if(watchID!==undefined){
+
+  navigator.geolocation.clearWatch(watchID);
+
+ }
+
+ clearInterval(timerID);
+
+ clearInterval(zombieTimer);
+
+ location.reload();
 
 };
 
