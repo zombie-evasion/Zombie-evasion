@@ -1,26 +1,435 @@
-<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zombie Evasion</title><style>
-body{font-family:-apple-system,sans-serif;background:#111;color:#fff;margin:0;padding:24px}
-main{max-width:520px;margin:auto}.panel{background:#1d1f23;padding:24px;border-radius:22px}
-button{width:100%;padding:16px;border:0;border-radius:14px;font-size:18px;font-weight:800;margin-top:14px}
-#game{display:none}#timer{font-size:34px;font-weight:900}.box{background:#dfe5df;height:330px;border-radius:18px;display:grid;place-items:center;font-size:38px;margin:18px 0}
-</style></head><body><main>
-<section id="home" class="panel"><h1>🧟 Zombie Evasion</h1><p><b>You weren't out for a run. You were trying to survive.</b></p>
-<p>This is the first hosted test. Press Start to confirm the game can run properly in Safari.</p>
-<button id="start">START DEMO</button></section>
-<section id="game" class="panel"><div id="timer">30:00</div><div class="box">🧟 &nbsp; 🔵 &nbsp; 🧟</div>
-<p id="gps">GPS not requested yet.</p><button id="locate">📍 REQUEST GPS</button><button id="end">END DEMO</button></section>
-</main><script>
-let secs=1800,timer=null;
-document.getElementById('start').onclick=function(){
- document.getElementById('home').style.display='none';document.getElementById('game').style.display='block';
- timer=setInterval(function(){secs--;let m=Math.floor(secs/60),s=secs%60;document.getElementById('timer').textContent=m+':'+String(s).padStart(2,'0');if(secs<=0)clearInterval(timer)},1000);
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<title>Zombie Evasion</title>
+
+<link
+
+  rel="stylesheet"
+
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+
+/>
+
+<style>
+
+* { box-sizing: border-box; }
+
+body {
+
+  margin: 0;
+
+  background: #0d0f10;
+
+  color: white;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+}
+
+main {
+
+  max-width: 600px;
+
+  margin: auto;
+
+  padding: 24px;
+
+}
+
+.panel {
+
+  background: #1b1e21;
+
+  border-radius: 24px;
+
+  padding: 24px;
+
+}
+
+h1 {
+
+  font-size: 38px;
+
+  margin-top: 0;
+
+}
+
+.tagline {
+
+  font-size: 20px;
+
+  font-weight: 700;
+
+}
+
+button {
+
+  width: 100%;
+
+  padding: 20px;
+
+  margin-top: 14px;
+
+  border: 0;
+
+  border-radius: 18px;
+
+  font-size: 20px;
+
+  font-weight: 800;
+
+  color: #2878ff;
+
+}
+
+#game {
+
+  display: none;
+
+}
+
+#timer {
+
+  font-size: 42px;
+
+  font-weight: 800;
+
+  margin-bottom: 18px;
+
+}
+
+#map {
+
+  width: 100%;
+
+  height: 55vh;
+
+  min-height: 420px;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+
+}
+
+#gps {
+
+  font-size: 17px;
+
+  margin: 18px 0 4px;
+
+}
+
+#status {
+
+  font-size: 15px;
+
+  color: #b8c0c8;
+
+}
+
+.player-icon {
+
+  background: #1677ff;
+
+  border: 4px solid white;
+
+  border-radius: 50%;
+
+  width: 24px !important;
+
+  height: 24px !important;
+
+  box-shadow: 0 0 12px rgba(0,0,0,.6);
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<main>
+
+<section id="home" class="panel">
+
+  <h1>🧟 Zombie Evasion</h1>
+
+  <p class="tagline">
+
+    You weren't out for a run. You were trying to survive.
+
+  </p>
+
+  <p>
+
+    Your real location becomes the game world.
+
+  </p>
+
+  <button id="start">START RUN</button>
+
+</section>
+
+<section id="game" class="panel">
+
+  <div id="timer">30:00</div>
+
+  <div id="map"></div>
+
+  <p id="gps">Waiting for GPS…</p>
+
+  <p id="status">
+
+    Stay alive.
+
+  </p>
+
+  <button id="end">END RUN</button>
+
+</section>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+let map;
+
+let playerMarker;
+
+let accuracyCircle;
+
+let watchID;
+
+let seconds = 1800;
+
+let timerID;
+
+/* START GAME */
+
+document.getElementById("start").onclick = function () {
+
+  document.getElementById("home").style.display = "none";
+
+  document.getElementById("game").style.display = "block";
+
+  startTimer();
+
+  startMap();
+
 };
-document.getElementById('locate').onclick=function(){
- if(!navigator.geolocation){document.getElementById('gps').textContent='GPS unavailable';return;}
- navigator.geolocation.getCurrentPosition(function(p){document.getElementById('gps').textContent='GPS working — accuracy ±'+Math.round(p.coords.accuracy)+'m';},
- function(e){document.getElementById('gps').textContent='GPS error: '+e.message;},{enableHighAccuracy:true,timeout:15000});
+
+/* TIMER */
+
+function startTimer() {
+
+  updateTimer();
+
+  timerID = setInterval(function () {
+
+    seconds--;
+
+    updateTimer();
+
+    if (seconds <= 0) {
+
+      clearInterval(timerID);
+
+      alert("YOU SURVIVED.");
+
+    }
+
+  },1000);
+
+}
+
+function updateTimer() {
+
+  let mins = Math.floor(seconds / 60);
+
+  let secs = seconds % 60;
+
+  document.getElementById("timer").textContent =
+
+    String(mins).padStart(2,"0") +
+
+    ":" +
+
+    String(secs).padStart(2,"0");
+
+}
+
+/* MAP */
+
+function startMap() {
+
+  map = L.map("map", {
+
+    zoomControl: false
+
+  }).setView([51.5,-0.1],15);
+
+  L.tileLayer(
+
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
+    {
+
+      maxZoom: 19,
+
+      attribution: "&copy; OpenStreetMap contributors"
+
+    }
+
+  ).addTo(map);
+
+  setTimeout(function(){
+
+    map.invalidateSize();
+
+  },300);
+
+  requestGPS();
+
+}
+
+/* GPS */
+
+function requestGPS() {
+
+  if (!navigator.geolocation) {
+
+    document.getElementById("gps").textContent =
+
+      "GPS unavailable.";
+
+    return;
+
+  }
+
+  document.getElementById("gps").textContent =
+
+    "Finding your location…";
+
+  watchID = navigator.geolocation.watchPosition(
+
+    gpsSuccess,
+
+    gpsError,
+
+    {
+
+      enableHighAccuracy: true,
+
+      maximumAge: 1000,
+
+      timeout: 15000
+
+    }
+
+  );
+
+}
+
+function gpsSuccess(position) {
+
+  const lat = position.coords.latitude;
+
+  const lng = position.coords.longitude;
+
+  const accuracy = position.coords.accuracy;
+
+  document.getElementById("gps").textContent =
+
+    "GPS working — accuracy ±" +
+
+    Math.round(accuracy) +
+
+    "m";
+
+  const location = [lat,lng];
+
+  if (!playerMarker) {
+
+    const playerIcon = L.divIcon({
+
+      className: "player-icon",
+
+      iconSize: [24,24]
+
+    });
+
+    playerMarker =
+
+      L.marker(location,{icon:playerIcon})
+
+      .addTo(map);
+
+    accuracyCircle =
+
+      L.circle(location,{
+
+        radius: accuracy,
+
+        weight: 1,
+
+        fillOpacity: 0.08
+
+      }).addTo(map);
+
+    map.setView(location,17);
+
+  } else {
+
+    playerMarker.setLatLng(location);
+
+    accuracyCircle.setLatLng(location);
+
+    accuracyCircle.setRadius(accuracy);
+
+    map.panTo(location);
+
+  }
+
+}
+
+function gpsError(error) {
+
+  document.getElementById("gps").textContent =
+
+    "GPS error: " + error.message;
+
+}
+
+/* END GAME */
+
+document.getElementById("end").onclick = function () {
+
+  if (watchID !== undefined) {
+
+    navigator.geolocation.clearWatch(watchID);
+
+  }
+
+  clearInterval(timerID);
+
+  location.reload();
+
 };
-document.getElementById('end').onclick=function(){clearInterval(timer);location.reload();};
-</script></body></html>
+
+</script>
+
+</body>
+
+</html>
